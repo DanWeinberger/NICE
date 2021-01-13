@@ -1,0 +1,131 @@
+---
+title: "Dutch Dashboard analyses"
+author: "Dan Weinberger"
+date: "1/13/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+library(reshape2)
+library(rjags)
+library(HDInterval)
+library(ExcessILI)
+library(lubridate)
+library(zoo)
+
+source('./functions/jags_negbin4.R')
+source('./functions/refresh_data.R')
+source('./functions/analyze_case.R')
+source('./functions/analyze_nice.R')
+source('./functions/delay_dist.R')
+
+DownLoadLatest <- F
+```
+
+```{r}
+case.data <- analyze_case_func(DownLoadLatest=DownLoadLatest)
+```
+
+## Daily reported cases. 
+Observed (gray) or smoothed  trend. The smoothed trend is estimated using seasonal trend decomposition with loess smoothing (STL). This removes the day-of-week effects and random noise.
+
+```{r}
+ts1 <- ts(log(case.data$Total_reported+0.5), frequency=7)
+stl.date <- case.data$date
+
+stl7 <- stl(ts1, s.window=7)
+plot(case.data$date,exp(stl7$time.series[,'trend']), type='l', ylab='Cases')
+points(case.data$date, case.data$Total_reported, type='l', col=rgb(0,0,0,alpha=0.2))
+abline(v=as.Date('2020-12-18'), lty=2)
+abline(v=as.Date('2020-03-25'), lty=2)
+```
+
+Crude 7 day Rate ratio (gray) or simple rolling average of rate ratio (black), or ratio calculated from smoothed trend (red)
+
+```{r}
+rr.smooth <- rep(NA, length(ts1))
+rr.smooth1 <- rep(NA, length(ts1))
+
+for(i in 8: length(ts1)){
+  rr.smooth[i] <- exp(stl7$time.series[i,'trend'])/exp(stl7$time.series[i-7,'trend'])
+  rr.smooth1[i] <- exp(stl7$time.series[i,'trend'])/exp(stl7$time.series[i-1,'trend'])
+  
+}
+
+plot(case.data$date, case.data$rr_7day, type='l', ylim=c(0.5, 2), col='gray', ylab='7 Day RR cases', bty='l')
+points(case.data$date, case.data$roll_rr_7day, type='l')
+points(stl.date,rr.smooth, type='l', col='red')
+abline(h=c(0.6,0.8,1), lty=2, col='gray')
+abline(v=as.Date('2020-12-18'), lty=2)
+abline(v=as.Date('2020-03-25'), lty=2)
+```
+
+## Hospitalization data
+
+These data are from NICE. Due to reporting delays, the last several days are incomplete. We present the raw data and then present estimates that adjust for incompleteness in the recent counts.
+
+```{r}
+nice.data <- analyze_nice_func(DownLoadLatest=DownLoadLatest)
+```
+
+Observed admissions by day, and smoothed admissions. Smoothing is performed using the STL function to subtract the day-of-week effect and random noise. 
+
+```{r}
+ts1 <- ts(log(nice.data$Hospital_admission[1:(nrow(nice.data)-1)]+0.5), frequency=7)
+stl.date <- nice.data$date[1:(nrow(nice.data)-1)]
+stl7 <- stl(ts1, s.window=7)
+matplot(stl.date,exp(stl7$time.series[,'trend']), type='l', bty='l', ylab='Admissions (NICE)', xlab='Date')
+points(stl.date, nice.data$Hospital_admission[1:(nrow(nice.data)-1)], type='l', col=rgb(0,0,0,alpha=0.2))
+abline(v=as.Date('2020-12-18'), lty=2)
+abline(v=as.Date('2020-03-25'), lty=2)
+```
+
+Crude 7 day Rate ratio (gray) or simple rolling average of rate ratio (black), or ratio calculated from smoothed trend (red)
+
+```{r}
+
+rr.smooth <- rep(NA, length(ts1))
+for(i in 8: length(ts1)){
+  rr.smooth[i] <- exp(stl7$time.series[i,'trend'])/exp(stl7$time.series[i-7,'trend'])
+}
+
+plot(nice.data$date, nice.data$rr_7day, type='l', ylim=c(0.5, 2), col='gray', bty='l', ylab='7 day ratio', xlab='Date')
+points(nice.data$date, nice.data$roll_rr_7day, type='l')
+points(stl.date,rr.smooth, type='l', col='red')
+
+abline(h=c(0.6,0.8,1), lty=2, col='gray')
+abline(v=as.Date('2020-10-12'), lty=2)
+abline(v=as.Date('2020-12-18'), lty=2)
+abline(v=as.Date('2020-03-25'), lty=2)
+```
+
+### Adjusting for reporting delay
+
+We use the Bayesian Nowcasting model proposed by [McGough et al (PLOS Comp Biol)]{https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1007735} 
+
+```{r}
+delay <- NoBbsFunc()
+```
+
+```{r}
+plot.period <- delay$combine.Est[delay$combine.Est$dates>=as.Date('2020-12-01'),]
+plot.period$plot.obs <- plot.period$ObsN
+plot.period$plot.obs[(nrow(plot.period)-nrow(delay$EstN)):nrow(plot.period) ] <- NA
+plot.period$obs.inc <- plot.period$ObsN
+plot.period$obs.inc[1:(nrow(plot.period)-nrow(delay$EstN)-1 )] <- NA
+```
+
+
+The red line shows the reported number of cases each day
+```{r}
+
+# plot(plot.period$dates,plot.period$plot.obs, type='l', bty='l', ylim=c(0, max(plot.period$ObsN,na.rm=T)))
+# polygon( c(delay$ci.plot$dates, rev(delay$ci.plot$dates)) , 
+#          c(delay$ci.plot$ci.lower,rev(delay$ci.plot$ci.upper)),
+#          col=rgb(0,0,1,alpha=0.1), border=NA)
+# points(plot.period$dates, plot.period$obs.inc, type='l', col=rgb(1,0,0,alpha=0.1))
+# abline(h=c(40, 100,200), lty=2, col='gray')
+
+```
+

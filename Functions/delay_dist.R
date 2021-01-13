@@ -1,8 +1,4 @@
-library(reshape2)
-library(rjags)
-library(HDInterval)
-source('./functions/jags_negbin4.R')
-
+NoBbsFunc <- function(){
 file_list <- list.files(path="./Data/nice_data/")
 
 all.ds <- lapply(file_list, function(x) readRDS(paste0( "./Data/nice_data/",x )) )
@@ -105,28 +101,13 @@ combine.Est <- rbind.data.frame(EstN.empty, EstN)
 combine.Est <- cbind.data.frame(combine.Est,ObsN,dates)
 
 combine.Est <- combine.Est[-nrow(combine.Est),] #chop off most recent obs--too uncertain
-
-matplot(combine.Est[,c("median","ci.lower","ci.upper")], type='l', ylim=c(0, max(EstN)))
-
-plot.period <- combine.Est[combine.Est$dates>=as.Date('2020-12-01'),]
-plot.period$plot.obs <- plot.period$ObsN
-plot.period$plot.obs[(nrow(plot.period)-nrow(EstN)):nrow(plot.period) ] <- NA
-
-plot.period$obs.inc <- plot.period$ObsN
-plot.period$obs.inc[1:(nrow(plot.period)-nrow(EstN)-1 )] <- NA
 ci.plot <- combine.Est[(nrow(combine.Est)-nrow(EstN)):nrow(combine.Est),]
 
-plot(plot.period$dates,plot.period$plot.obs, type='l', bty='l', ylim=c(0, max(plot.period$ObsN,na.rm=T)))
-polygon( c(ci.plot$dates, rev(ci.plot$dates)) , 
-         c(ci.plot$ci.lower,rev(ci.plot$ci.upper)),
-         col=rgb(0,0,1,alpha=0.1), border=NA)
-points(plot.period$dates, plot.period$obs.inc, type='l', col=rgb(1,0,0,alpha=0.1))
 
-# plot.period$rr.7 <- NA
-# for(i in 8:nrow(plot.period)){
-#   plot.period$rr.7[i] <- plot.period$median[i]/plot.period$ObsN[i-7]
-# }
-# plot(plot.period$rr.7, type='l')
+out.list =list('ci.plot'=ci.plot,'EstN'=EstN, 'combine.Est'=combine.Est)
+
+}
+
 
 
 
