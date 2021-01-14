@@ -12,11 +12,13 @@ library(rjags)
 library(HDInterval)
 library(ExcessILI)
 library(lubridate)
+library(dplyr)
 library(zoo)
 
 source('./functions/jags_negbin4.R')
 source('./functions/jags_mcgough.R')
 source('./functions/jags_mcgoughPois.R')
+source('./functions/extrap_function.R')
 
 source('./functions/refresh_data.R')
 source('./functions/analyze_case.R')
@@ -38,7 +40,8 @@ ts1 <- ts(log(case.data$Total_reported+0.5), frequency=7)
 stl.date <- case.data$date
 
 stl7 <- stl(ts1, s.window=7)
-plot(case.data$date,exp(stl7$time.series[,'trend']), type='l', ylab='Cases')
+case.data$stl.trend <- exp(stl7$time.series[,'trend'])
+plot(case.data$date,case.data$stl.trend, type='l', ylab='Cases')
 points(case.data$date, case.data$Total_reported, type='l', col=rgb(0,0,0,alpha=0.2))
 abline(v=as.Date('2020-12-18'), lty=2)
 abline(v=as.Date('2020-03-25'), lty=2)
@@ -64,6 +67,20 @@ abline(v=as.Date('2020-12-18'), lty=2)
 abline(v=as.Date('2020-03-25'), lty=2)
 ```
 
+Simple extrapolation of the current trend
+
+```{r}
+extrap.case <- extrap.func(week.rr=0.8, ds=case.data, n.extrap=45)
+
+```
+
+```{r}
+plot(extrap.case$date, extrap.case$Total_reported, type='l', col='gray', ylab='Expected cases', bty='l', main='Assume 20% decline/week for 45 days')
+points(extrap.case$date, extrap.case$stl.trend, type='l', col='black', lty=1)
+points(extrap.case$date, extrap.case$extrap.cases0.8, type='l', col='red', lty=2)
+abline(h=c(2000, 4000, 6000), col=rgb(0,0,0,alpha=0.1))
+```
+
 ## Hospitalization data
 
 These data are from NICE. Due to reporting delays, the last several days are incomplete. We present the raw data and then present estimates that adjust for incompleteness in the recent counts.
@@ -78,6 +95,9 @@ Observed admissions by day, and smoothed admissions. Smoothing is performed usin
 ts1 <- ts(log(nice.data$Hospital_admission[1:(nrow(nice.data)-1)]+0.5), frequency=7)
 stl.date <- nice.data$date[1:(nrow(nice.data)-1)]
 stl7 <- stl(ts1, s.window=7)
+
+nice.data$stl.trend <- c(exp(stl7$time.series[,'trend']),NA)
+
 matplot(stl.date,exp(stl7$time.series[,'trend']), type='l', bty='l', ylab='Admissions (NICE)', xlab='Date')
 points(stl.date, nice.data$Hospital_admission[1:(nrow(nice.data)-1)], type='l', col=rgb(0,0,0,alpha=0.2))
 abline(v=as.Date('2020-12-18'), lty=2)
@@ -102,6 +122,19 @@ abline(v=as.Date('2020-10-12'), lty=2)
 abline(v=as.Date('2020-12-18'), lty=2)
 abline(v=as.Date('2020-03-25'), lty=2)
 ```
+
+
+```{r}
+extrap.nice <- extrap.func(week.rr=0.8, ds=nice.data, n.extrap=45)
+```
+
+```{r}
+plot(extrap.nice$date, extrap.nice$Hospital_admission, type='l', col='gray', ylab='Expected cases', bty='l', main='Assume 20% decline/week for 45 days')
+points(extrap.nice$date, extrap.nice$stl.trend, type='l', col='black', lty=1)
+points(extrap.nice$date, extrap.nice$extrap.cases0.8, type='l', col='red', lty=2)
+abline(h=c(40, 100, 200), col=rgb(0,0,0,alpha=0.1), lty=c(2,3,3))
+```
+
 
 ### Adjusting for reporting delay
 
