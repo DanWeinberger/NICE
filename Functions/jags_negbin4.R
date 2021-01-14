@@ -11,8 +11,7 @@ model_string_negbin4<-
     p1[t,d] <- r1/(r1+lambda[t,d])
   
     log(lambda[t,d]) <- ( alpha[t] +
-            beta.logged2[d]*step(D-d) +
-            sum.beta.logged2[t]*(1-step(D-d)) 
+            beta.logged2[d]
                     ) 
     }
    

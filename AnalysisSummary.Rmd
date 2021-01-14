@@ -15,6 +15,8 @@ library(lubridate)
 library(zoo)
 
 source('./functions/jags_negbin4.R')
+source('./functions/jags_mcgough.R')
+
 source('./functions/refresh_data.R')
 source('./functions/analyze_case.R')
 source('./functions/analyze_nice.R')
@@ -120,12 +122,20 @@ plot.period$obs.inc[1:(nrow(plot.period)-nrow(delay$EstN)-1 )] <- NA
 The red line shows the reported number of cases each day
 ```{r}
 
-# plot(plot.period$dates,plot.period$plot.obs, type='l', bty='l', ylim=c(0, max(plot.period$ObsN,na.rm=T)))
-# polygon( c(delay$ci.plot$dates, rev(delay$ci.plot$dates)) , 
-#          c(delay$ci.plot$ci.lower,rev(delay$ci.plot$ci.upper)),
-#          col=rgb(0,0,1,alpha=0.1), border=NA)
-# points(plot.period$dates, plot.period$obs.inc, type='l', col=rgb(1,0,0,alpha=0.1))
-# abline(h=c(40, 100,200), lty=2, col='gray')
+plot(plot.period$dates,plot.period$plot.obs, type='l', bty='l', ylim=c(0, max(plot.period$ObsN,na.rm=T)))
+polygon( c(delay$ci.plot$dates, rev(delay$ci.plot$dates)) ,
+         c(delay$ci.plot$ci.lower,rev(delay$ci.plot$ci.upper)),
+         col=rgb(0,0,1,alpha=0.1), border=NA)
+points(plot.period$dates, plot.period$obs.inc, type='l', col=rgb(1,0,0,alpha=0.1))
+abline(h=c(40, 100,200), lty=2, col='gray')
+
+
+```
+## check
+```{r}
+plot.period$rr <- plot.period$obs.inc/ plot.period$median
+plot.period$rr.lcl <- plot.period$obs.inc/ plot.period$ci.lower
+plot.period$rr.ucl <- plot.period$obs.inc/ plot.period$ci.upper
 
 ```
 
