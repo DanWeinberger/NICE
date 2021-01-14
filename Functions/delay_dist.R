@@ -99,8 +99,14 @@ sum.n.index <- grep('sum.n',dimnames(posterior_samples.all)[[2]])
 
 beta.index <- grep('beta.logged',dimnames(posterior_samples.all)[[2]])
 
+alpha.index <- grep('alpha',dimnames(posterior_samples.all)[[2]])
+
+#r.index <- grep('r',dimnames(posterior_samples.all)[[2]])
+
 EstN <- cbind.data.frame('median'=median.est[sum.n.index], 'ci'=ci.est[sum.n.index,])
 ObsN <- apply(delay.mat,1,sum, na.rm=T)
+
+alpha <- cbind.data.frame('median'=median.est[alpha.index], 'ci'=ci.est[alpha.index,])
 
 EstN.empty <- as.data.frame(matrix(NA, nrow= (length(ObsN)-nrow(EstN)), ncol=ncol(EstN)))
 names(EstN.empty) <- names(EstN)
@@ -115,7 +121,7 @@ combine.Est <- combine.Est[-nrow(combine.Est),] #chop off most recent obs--too u
 ci.plot <- combine.Est[(nrow(combine.Est)-nrow(EstN)):nrow(combine.Est),]
 
 
-out.list =list('ci.plot'=ci.plot,'EstN'=EstN, 'combine.Est'=combine.Est,'beta.est'=beta.est)
+out.list =list('ci.plot'=ci.plot,'EstN'=EstN, 'alpha'=alpha,'combine.Est'=combine.Est,'beta.est'=beta.est)
 
 }
 

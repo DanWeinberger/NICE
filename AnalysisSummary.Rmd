@@ -16,6 +16,7 @@ library(zoo)
 
 source('./functions/jags_negbin4.R')
 source('./functions/jags_mcgough.R')
+source('./functions/jags_mcgoughPois.R')
 
 source('./functions/refresh_data.R')
 source('./functions/analyze_case.R')
