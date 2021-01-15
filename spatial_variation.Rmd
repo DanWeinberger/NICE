@@ -1,0 +1,85 @@
+---
+title: "Dutch Dashboard analyses:space"
+author: "Dan Weinberger"
+date: "1/13/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+library(reshape2)
+library(rjags)
+library(HDInterval)
+library(ExcessILI)
+library(lubridate)
+library(dplyr)
+library(zoo)
+library(lme4)
+
+source('./functions/refresh_data.R')
+source('./functions/analyze_case_space.R')
+source('./functions/analyze_nice_space.R')
+source('./functions/delay_dist.R')
+
+DownLoadLatest <- F
+```
+
+```{r}
+case.data <- analyze_case_space_func(DownLoadLatest=DownLoadLatest)
+```
+
+```{r}
+nice.data <- analyze_nice_space_func(DownLoadLatest=DownLoadLatest)
+```
+
+## Poisson random intercept
+```{r}
+nice.long <- nice.data$d1.c.long
+nice.long$log.offset <- log(nice.long$days)
+nice.long$muni <- as.factor(nice.long$muni)
+mod1 <- 
+  glmer(hosp~ (period|muni ) +offset(log.offset), family='poisson', data=nice.long)
+ran.effs <- ranef(mod1)[['muni']]
+ran.effs$muni <- rownames(ran.effs)
+names(ran.effs) <- c('int.nice','period.nice','muni')
+
+```
+
+Association between intercept and period effect
+This shows places with more hospitalizations in period 1 had smaller increases in period 2 (note: this is not adjusted for population size so that intercept is a bit meaningless)
+```{r}
+plot(ran.effs$period.nice, ran.effs$int.nice)
+```
+
+
+### same for cases
+```{r}
+case.long <- case.data$d1.c.long
+case.long$log.offset <- log(case.long$days)
+case.long$muni <- as.factor(case.long$muni)
+mod2 <- 
+  glmer(cases~ (period|muni ) +offset(log.offset), family='poisson', data=case.long)
+ran.effs.case <- ranef(mod2)[['muni']]
+ran.effs.case$muni <- rownames(ran.effs.case)
+names(ran.effs.case) <- c('int.case','period.case','muni')
+```
+
+Compare hospitalization and case estimates. This shows general agreement that places that had less intense case reports also had less intense hospitalizations
+```{r}
+ ran.eff2 <- merge(ran.effs.case, ran.effs, by='muni')
+plot(ran.eff2$period.nice, ran.eff2$period.case, bty='l', xlab='Log-Rate ratio NICE', ylab='Log-rate ratio positive tests')
+abline(a=0, b=1)
+```
+Munis with lower rate in 2nd period vs first
+```{r}
+ran.eff2 <- ran.eff2[order(ran.eff2$period.nice),]
+print(ran.eff2[ran.eff2$period.nice<0,])
+
+
+```
+
+
+
+
+
+
