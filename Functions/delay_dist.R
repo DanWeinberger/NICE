@@ -32,27 +32,45 @@ delay.mat[delay.mat<0] <- 0
 tot_date <- cbind.data.frame('date'=dates, 'N.hosp'=apply(delay.mat,1, sum, na.rm=T) )
 pct.tot.date <- apply(delay.mat,2, function(x) x/tot_date$N.hosp) #reading across the rows, shows what proportion of the total that have been reported are reported on each day. Reay across the rows
 
-cum.pct <- t(apply(pct.tot.date,1, function(x){
-  x[is.na(x)] <-0
-  y<-cumsum(x)
-  return(y)
-} ))
 
 ###########
 ###NoBbs model
 ###########
-
+mat.pre.func <- function(x){
+  total_obs <- sum(x, na.rm=T)
+  first.obs.t <- which(!is.na(x))[1]
+  first.obs.value <- x[first.obs.t]
+  complete.obs <- first.obs.t==1
+  x.clean <- x
+  if(complete.obs==F){
+  x.clean[first.obs.t] <- NA
+  }
+  outlist= list('total_obs'=total_obs,'first.obs.t'=first.obs.t, 'first.obs.value'=first.obs.value,'complete.obs'=complete.obs,'x.clean'=x.clean)
+  return(outlist)
+}
+T.include <- 100
+delay.mat.recent <- delay.mat[(nrow(delay.mat)-100):nrow(delay.mat),1:(T.include+1)]
+dates.keep <- dates[(nrow(delay.mat)-100):nrow(delay.mat)]
+dow <- as.numeric(as.factor(weekdays(dates.keep)))
+delay.mat.ls <- split(delay.mat.recent, 1:nrow(delay.mat.recent))
+process.mat <- lapply(delay.mat.ls,mat.pre.func)
+  
 #Prep data
-reporting.triangle <- delay.mat[!is.na(delay.mat[,1]) , ]
-reporting.triangle <- reporting.triangle[,1:nrow(reporting.triangle)]
+reporting.triangle <- t(sapply(process.mat, '[[','x.clean' )  )
+N.first.obs <- sapply(process.mat, '[[','first.obs.t' )  
+
+first.obs.value <- sapply(process.mat, '[[','first.obs.value' )  
+complete.obs <- 1*sapply(process.mat, '[[','complete.obs' )  
 
 now.T <- nrow(reporting.triangle)
-max_D <- now.T-1 # ifelse(is.null(moving_window),now.T-1,moving_window-1)
+max_D <- now.T # ifelse(is.null(moving_window),now.T-1,moving_window-1)
 
-#beta.priors <-  rep(0.1, times=(max_D)+1) #θ = (3,30,50,10,4,3)
-first.weeks <- c(25,  45, 15, 5 )
-next.weeks <- rep(1, times=(max_D+1 - length(first.weeks) ))
-beta.priors <- c(first.weeks, next.weeks)
+reporting.triangle <- cbind.data.frame(reporting.triangle,first.obs.value )
+
+tot.n.obs <- apply(reporting.triangle,1,sum, na.rm=T)
+
+beta.priors <-  rep(0.1, times=(max_D)+1) 
+
 
 ##############################################################
 #Model Fitting
@@ -64,25 +82,23 @@ inits3=list(".RNG.seed"=c(789), ".RNG.name"='base::Wichmann-Hill')
 ##############################################
 #Model Organization
 ##############################################
-model_spec<-textConnection(NobBs.NB)
+model_spec<-textConnection(model_string_Pois4_partial)
 model_jags<-jags.model(model_spec, 
-                       inits=list(inits1,inits2, inits3),
+                       inits=list(inits1),
                        data=list('n' = reporting.triangle,
-                                 'Today' = now.T,
+                                 'n.dates' = nrow(reporting.triangle),
                                  'D' = max_D,
+                                 'dow'=dow,
+                                 'N.first.obs'=N.first.obs,
                                  alphat.shape.prior=0.001,
                                  alphat.rate.prior=0.001,
-                                 alpha1.mean.prior=0,
-                                  alpha1.prec.prior=0.001,
-                                 dispersion.prior.shape=0.001,
-                                 dispersion.prior.rate=0.001,
                                  'beta.priors'=beta.priors
                                  
                        ),
                        n.adapt=10000, 
-                       n.chains=3)
-params<-c('sum.n',
-          'beta.logged', 'alpha')
+                       n.chains=1)
+params<-c('sum.n','sum.lambda',
+          'beta.logged', 'alpha','sum.beta', 'delta')
 
 ##############################################
 #Posterior Sampling
@@ -99,12 +115,12 @@ sum.n.index <- grep('sum.n',dimnames(posterior_samples.all)[[2]])
 
 beta.index <- grep('beta.logged',dimnames(posterior_samples.all)[[2]])
 
-alpha.index <- grep('alpha',dimnames(posterior_samples.all)[[2]])
+alpha.index <- grep('alpha[',dimnames(posterior_samples.all)[[2]], fixed=T)
 
 #r.index <- grep('r',dimnames(posterior_samples.all)[[2]])
 
 EstN <- cbind.data.frame('median'=median.est[sum.n.index], 'ci'=ci.est[sum.n.index,])
-ObsN <- apply(delay.mat,1,sum, na.rm=T)
+ObsN <- tot.n.obs
 
 alpha <- cbind.data.frame('median'=median.est[alpha.index], 'ci'=ci.est[alpha.index,])
 
@@ -115,10 +131,11 @@ beta.est <- cbind(exp(median.est[beta.index]), exp(ci.est[beta.index,]))
 
 combine.Est <- rbind.data.frame(EstN.empty, EstN)
 
-combine.Est <- cbind.data.frame(combine.Est,ObsN,dates)
+combine.Est <- cbind.data.frame(combine.Est,ObsN,dates.keep)
 
 combine.Est <- combine.Est[-nrow(combine.Est),] #chop off most recent obs--too uncertain
-ci.plot <- combine.Est[(nrow(combine.Est)-nrow(EstN)):nrow(combine.Est),]
+
+ci.plot <- combine.Est
 
 
 out.list =list('ci.plot'=ci.plot,'EstN'=EstN, 'alpha'=alpha,'combine.Est'=combine.Est,'beta.est'=beta.est)

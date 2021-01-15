@@ -16,6 +16,8 @@ library(dplyr)
 library(zoo)
 
 source('./functions/jags_negbin4.R')
+source('./functions/jags_Pois_partial.R')
+
 source('./functions/jags_mcgough.R')
 source('./functions/jags_mcgoughPois.R')
 source('./functions/extrap_function.R')
@@ -147,9 +149,9 @@ delay <- NoBbsFunc()
 ```{r}
 plot.period <- delay$combine.Est[delay$combine.Est$dates>=as.Date('2020-12-01'),]
 plot.period$plot.obs <- plot.period$ObsN
-plot.period$plot.obs[(nrow(plot.period)-nrow(delay$EstN)):nrow(plot.period) ] <- NA
+#plot.period$plot.obs[(nrow(plot.period)-nrow(delay$EstN)):nrow(plot.period) ] <- NA
 plot.period$obs.inc <- plot.period$ObsN
-plot.period$obs.inc[1:(nrow(plot.period)-nrow(delay$EstN)-1 )] <- NA
+#plot.period$obs.inc[1:(nrow(plot.period)-nrow(delay$EstN)-1 )] <- NA
 ```
 
 
