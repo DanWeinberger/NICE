@@ -15,6 +15,7 @@ library(lubridate)
 library(dplyr)
 library(zoo)
 library(lme4)
+library(readr)
 
 source('./functions/refresh_data.R')
 source('./functions/analyze_case_space.R')
@@ -22,6 +23,14 @@ source('./functions/analyze_nice_space.R')
 source('./functions/delay_dist.R')
 
 DownLoadLatest <- F
+```
+
+```{r}
+pop1 <- read_delim('./Data/PopData/PopCBS.csv',delim=';')
+pop1 <- pop1[,c('Regions',"PopulationOn1January_1.")]
+m1 <- readRDS('./Data/nice_data/2021_01_03_15_35.rds')
+m1 <- m1[,c('Municipality_name','Municipality_code')]
+pop1 <- merge(m1, pop1, all.x=T, by.x="Municipality_code", by.y="Regions")
 ```
 
 ```{r}
