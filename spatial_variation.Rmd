@@ -27,10 +27,13 @@ DownLoadLatest <- F
 
 ```{r}
 pop1 <- read_delim('./Data/PopData/PopCBS.csv',delim=';')
-pop1 <- pop1[,c('Regions',"PopulationOn1January_1.")]
+pop1 <- pop1[,c('Regions',"PopulationOn1January_1")]
 m1 <- readRDS('./Data/nice_data/2021_01_03_15_35.rds')
 m1 <- m1[,c('Municipality_name','Municipality_code')]
+m1 <- unique(m1)
 pop1 <- merge(m1, pop1, all.x=T, by.x="Municipality_code", by.y="Regions")
+names(pop1) <- c('code','muni','pop')
+pop1$pop <- as.numeric(pop1$pop)
 ```
 
 ```{r}
@@ -44,7 +47,8 @@ nice.data <- analyze_nice_space_func(DownLoadLatest=DownLoadLatest)
 ## Poisson random intercept
 ```{r}
 nice.long <- nice.data$d1.c.long
-nice.long$log.offset <- log(nice.long$days)
+nice.long <- merge(nice.long, pop1, by='muni')
+nice.long$log.offset <- log(nice.long$days*nice.long$pop/100000)
 nice.long$muni <- as.factor(nice.long$muni)
 mod1 <- 
   glmer(hosp~ (period|muni ) +offset(log.offset), family='poisson', data=nice.long)
@@ -55,22 +59,42 @@ names(ran.effs) <- c('int.nice','period.nice','muni')
 ```
 
 Association between intercept and period effect
-This shows places with more hospitalizations in period 1 had smaller increases in period 2 (note: this is not adjusted for population size so that intercept is a bit meaningless)
+Higher incidence of hospitalization in period 1 associated with smaller increases in period 2
 ```{r}
-plot(ran.effs$period.nice, ran.effs$int.nice)
+plot( ran.effs$int.nice,ran.effs$period.nice)
+abline(h=0)
 ```
+
+```{r}
+ ran.effs <- merge(ran.effs,pop1, by='muni')
+```
+
+Association of incidence in period 1 or increase with population
+```{r}
+plot(log(ran.effs$pop),ran.effs$int.nice )
+plot(log(ran.effs$pop),ran.effs$period.nice)
+
+```
+
 
 
 ### same for cases
 ```{r}
 case.long <- case.data$d1.c.long
-case.long$log.offset <- log(case.long$days)
+case.long <- merge(case.long, pop1, by='muni')
+
+case.long$log.offset <- log(case.long$days*case.long$pop/100000)
+
 case.long$muni <- as.factor(case.long$muni)
 mod2 <- 
   glmer(cases~ (period|muni ) +offset(log.offset), family='poisson', data=case.long)
 ran.effs.case <- ranef(mod2)[['muni']]
 ran.effs.case$muni <- rownames(ran.effs.case)
 names(ran.effs.case) <- c('int.case','period.case','muni')
+```
+
+```{r}
+plot( ran.effs.case$int.case,ran.effs.case$period.case)
 ```
 
 Compare hospitalization and case estimates. This shows general agreement that places that had less intense case reports also had less intense hospitalizations
