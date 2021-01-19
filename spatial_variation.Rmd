@@ -50,19 +50,31 @@ nice.long <- nice.data$d1.c.long
 nice.long <- merge(nice.long, pop1, by='muni')
 nice.long$log.offset <- log(nice.long$days*nice.long$pop/100000)
 nice.long$muni <- as.factor(nice.long$muni)
+nice.long$period <- as.factor(nice.long$period)
 mod1 <- 
   glmer(hosp~ (period|muni ) +offset(log.offset), family='poisson', data=nice.long)
 ran.effs <- ranef(mod1)[['muni']]
 ran.effs$muni <- rownames(ran.effs)
-names(ran.effs) <- c('int.nice','period.nice','muni')
+names(ran.effs) <- c('int.nice','period1.nice','period2.nice','muni')
 
 ```
 
 Association between intercept and period effect
 Higher incidence of hospitalization in period 1 associated with smaller increases in period 2
 ```{r}
-plot( ran.effs$int.nice,ran.effs$period.nice)
+plot( ran.effs$int.nice,ran.effs$period1.nice)
 abline(h=0)
+
+plot( ran.effs$int.nice,ran.effs$period2.nice)
+abline(h=0)
+
+plot( ran.effs$period1.nice,ran.effs$period2.nice)
+abline(h=0)
+
+#Per2/Per1 vs springbaseline
+plot( ran.effs$int.nice,ran.effs$period2.nice-ran.effs$period1.nice)
+abline(h=0)
+
 ```
 
 ```{r}
@@ -100,8 +112,8 @@ plot( ran.effs.case$int.case,ran.effs.case$period.case)
 Compare hospitalization and case estimates. This shows general agreement that places that had less intense case reports also had less intense hospitalizations
 ```{r}
  ran.eff2 <- merge(ran.effs.case, ran.effs, by='muni')
-plot(ran.eff2$period.nice, ran.eff2$period.case, bty='l', xlab='Log-Rate ratio NICE', ylab='Log-rate ratio positive tests')
-abline(a=0, b=1)
+# plot(ran.eff2$period1.nice, ran.eff2$period.case, bty='l', xlab='Log-Rate ratio NICE', ylab='Log-rate ratio positive tests')
+# abline(a=0, b=1)
 ```
 Munis with lower rate in 2nd period vs first
 ```{r}
@@ -110,6 +122,94 @@ print(ran.eff2[ran.eff2$period.nice<0,])
 
 
 ```
+
+Simple plots
+```{r}
+f1 <- nice.data$d1.c
+f1 <- merge(f1, pop1, by.x="Municipality_name" , by.y='muni')
+
+f1$inc.per0 <- f1$'0'/f1$pop
+f1$inc.per1 <- f1$'1'/f1$pop
+f1$inc.per2 <- f1$'2'/f1$pop
+
+f1$simp.rr1.2 <- (f1$'2'+0.5)/(f1$'1'+0.5)
+
+plot(f1$inc.per0, f1$inc.per1)
+
+plot(f1$inc.per1, f1$inc.per2)
+plot(f1$inc.per0, f1$inc.per2)
+
+symbols((f1$inc.per0+f1$inc.per1), f1$inc.per2, circles= log(f1$pop), inches=0.1, fg=NA, bg=rgb(0,0,0,0.1), bty='l')
+abline(a=0, b=1)
+
+symbols((f1$inc.per0+f1$inc.per1), log(f1$simp.rr1.2), circles= sqrt(log(f1$pop))/pi, inches=0.05, fg=NA, bg=rgb(0,0,0,0.1), bty='l')
+abline(h=0)
+
+
+
+```
+
+Looks at changes over time by muni
+```{r}
+nice.wk <- nice.data$d1.c.wk
+nice.dates <- nice.wk$Date_of_statistics
+
+
+smooth.nice <- apply(nice.wk[,-c(1:2)], 2, stl.func, ts.date=nice.dates, smooth.window=10)
+
+nice.rr <- apply(smooth.nice, 2, rr.smooth.func)
+
+
+check1 <- c("'s-Gravenhage" ,'Utrecht','Rotterdam', 'Amsterdam')
+check2 <- c('Groningen','Haarlem','Amersfoort','Maastricht')
+
+par(mfrow=c(1,2))
+matplot(nice.dates,log(nice.rr[,check1]), type='l', ylim=log(c(0.5,5)))
+abline(h=0)
+
+matplot(nice.dates,log(nice.rr[,check2]), type='l', ylim=log(c(0.5,5)))
+abline(h=0)
+
+cum.cases <- apply(nice.wk[,-c(1:2)],2, cumsum)
+common.munis <- sort(pop1$muni[pop1$muni %in% colnames(cum.cases)])
+cum.cases <- cum.cases[,common.munis]
+pop.sort <- pop1[order(pop1$muni),]
+pop.sort <- pop.sort[!is.na(pop.sort$pop),]
+pop.sort <- pop.sort[,which(pop.sort$muni %in% colnames(cum.cases))]
+
+cum.inc <- sapply(colnames(cum.cases) , function(x) cum.inc =cum.cases[,x]/pop.sort$pop[pop.sort$muni==x]*100000) 
+
+par(mfrow=c(1,2))
+matplot(nice.dates,log(cum.inc[,check1]), type='l', ylim=(c(-2,6)))
+abline(h=0)
+
+matplot(nice.dates,log(cum.inc[,check2]), type='l', ylim=(c(-2,6)))
+abline(h=0)
+
+
+
+##Cum since sept 1
+
+cum.cases <- apply(nice.wk[nice.dates >=as.Date('2020-09-01'),-c(1:2)],2, cumsum)
+common.munis <- sort(pop1$muni[pop1$muni %in% colnames(cum.cases)])
+cum.cases <- cum.cases[,common.munis]
+pop.sort <- pop1[order(pop1$muni),]
+pop.sort <- pop.sort[!is.na(pop.sort$pop),]
+
+cum.inc <- sapply(colnames(cum.cases) , function(x) cum.inc =cum.cases[,x]/pop.sort$pop[pop.sort$muni==x]*100000) 
+
+nice.dates.fall <- nice.dates[nice.dates >=as.Date('2020-09-01')]
+par(mfrow=c(1,2))
+matplot(nice.dates.fall,log(cum.inc[,check1]), type='l', ylim=(c(-2,6)))
+abline(h=0)
+
+matplot(nice.dates.fall,log(cum.inc[,check2]), type='l', ylim=(c(-2,6)))
+abline(h=0)
+
+
+```
+
+
 
 
 

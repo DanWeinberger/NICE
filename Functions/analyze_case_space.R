@@ -22,9 +22,7 @@ analyze_case_space_func <- function(DownLoadLatest=F) {
   
   d1.m <- melt(d1[,c("Total_reported" ,'Municipality_name','period')], id.vars=c('Municipality_name','period'))
   d1.c <-dcast(d1.m,  Municipality_name~period, fun.aggregate = sum)
-  d1.c$ratio <- (d1.c$`2`/1.5 )/(d1.c$`1`/3)
-  
-  
+
   d1.c.long <-dcast(d1.m,  Municipality_name+period ~., fun.aggregate = sum)
   d1.c.long$days[d1.c.long$period==1] <- as.Date('2020-11-30')- as.Date('2020-09-01')
   d1.c.long$days[d1.c.long$period==2] <- max(d1$Date_of_publication, na.rm=T)- as.Date('2020-12-01')
