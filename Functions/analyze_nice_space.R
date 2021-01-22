@@ -55,4 +55,13 @@ rr.smooth.func <- function(smooth.ts){
   return(rr.smooth)
 }
 
+#7 day move ave
+smooth.ave.func <- function(ts.vec){
+  smooth.ts.vec <- rep(NA, length(ts.vec))
+  for(i in 7: length(smooth.ts.vec)){
+    smooth.ts.vec[i] <- mean(ts.vec[i:(i-6)])
+  }
+  return(smooth.ts.vec)
+}
+
 

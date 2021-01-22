@@ -61,7 +61,7 @@ names(ran.effs) <- c('int.nice','period1.nice','period2.nice','muni')
 
 Association between intercept and period effect
 Higher incidence of hospitalization in period 1 associated with smaller increases in period 2
-```{r}
+```{r, fig.width=5, fig.height=5}
 plot( ran.effs$int.nice,ran.effs$period1.nice)
 abline(h=0)
 
@@ -72,10 +72,16 @@ plot( ran.effs$period1.nice,ran.effs$period2.nice)
 abline(h=0)
 
 #Per2/Per1 vs springbaseline
-plot( ran.effs$int.nice,ran.effs$period2.nice-ran.effs$period1.nice)
+plot( ran.effs$int.nice,ran.effs$period2.nice-ran.effs$period1.nice, ylab='Increase in later winter vs Fall', xlab='Log(incidence Spring)')
 abline(h=0)
 
+#Increase in early fall vs spring vs vs spring baseline
+plot( ran.effs$int.nice,ran.effs$period1.nice, ylab='Increase in fall vs Spring', xlab='Log(incidence Spring)')
+abline(h=0)
 ```
+
+
+
 
 ```{r}
  ran.effs <- merge(ran.effs,pop1, by='muni')
@@ -115,6 +121,7 @@ Compare hospitalization and case estimates. This shows general agreement that pl
 # plot(ran.eff2$period1.nice, ran.eff2$period.case, bty='l', xlab='Log-Rate ratio NICE', ylab='Log-rate ratio positive tests')
 # abline(a=0, b=1)
 ```
+
 Munis with lower rate in 2nd period vs first
 ```{r}
 ran.eff2 <- ran.eff2[order(ran.eff2$period.nice),]
@@ -155,10 +162,12 @@ nice.wk <- nice.data$d1.c.wk
 nice.dates <- nice.wk$Date_of_statistics
 
 
-smooth.nice <- apply(nice.wk[,-c(1:2)], 2, stl.func, ts.date=nice.dates, smooth.window=10)
+smooth.nice <- apply(nice.wk[,-c(1:2)], 2, stl.func, ts.date=nice.dates)
+
+plot(smooth.nice[,'Utrecht'], type='l')
+points(nice.wk[,'Utrecht'], type='l', col='gray')
 
 nice.rr <- apply(smooth.nice, 2, rr.smooth.func)
-
 
 check1 <- c("'s-Gravenhage" ,'Utrecht','Rotterdam', 'Amsterdam')
 check2 <- c('Groningen','Haarlem','Amersfoort','Maastricht')
@@ -209,6 +218,39 @@ abline(h=0)
 
 ```
 
+
+```{r}
+case.wk <- case.data$d1.c.wk
+case.dates <- case.wk$Date_of_publication
+
+#7 day move ave
+smooth.case7 <- apply(case.wk[,-c(1:2)], 2, smooth.ave.func)
+smooth.case.rr <- apply(smooth.case7, 2, rr.smooth.func)
+
+#View(cbind.data.frame(case.dates,smooth.case7[,check1]))
+```
+
+```{r}
+par(mfrow=c(1,2))
+matplot(case.dates,smooth.case.rr[,check1], type='l',ylim=c(0.5,2.0))
+abline(h=c(0.6,0.8,1.0), col='gray')
+
+matplot(case.dates,smooth.case.rr[,check2], type='l',ylim=c(0.5,2.0))
+abline(h=c(0.6,0.8,1.0), col='gray')
+```
+Same thing for NICE
+```{r}
+smooth.nice7 <- apply(nice.wk[,-c(1:2)], 2, smooth.ave.func)
+smooth.nice.rr <- apply(smooth.nice7, 2, rr.smooth.func)
+```
+
+```{r}
+matplot(nice.dates,smooth.nice.rr[,check1], type='l', ylim=c(0.5,3), bty='l')
+abline(h=1,lty=2)
+
+matplot(nice.dates,smooth.nice.rr[,check2], type='l', ylim=c(0.5,3), bty='l')
+abline(h=1,lty=2)
+```
 
 
 

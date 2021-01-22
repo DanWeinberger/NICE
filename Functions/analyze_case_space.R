@@ -29,7 +29,23 @@ analyze_case_space_func <- function(DownLoadLatest=F) {
   names(d1.c.long) <- c('muni','period','cases','days')
   d1.c.long <- d1.c.long[d1.c.long$muni != '' & !is.na(d1.c.long$cases) & d1.c.long$period %in% c(1,2),]
   
-  outlist <- list('d1.c.long'=d1.c.long, 'd1.c'=d1.c)
+  d1.m.wk <- melt(d1[,c("Total_reported" ,'Municipality_name','Date_of_publication')], id.vars=c('Municipality_name','Date_of_publication'))
+  d1.c.wk <-dcast(d1.m.wk,  Date_of_publication~Municipality_name, fun.aggregate = sum)
+  
+  outlist <- list('d1.c.long'=d1.c.long, 'd1.c'=d1.c,'d1.c.wk'=d1.c.wk)
   return(outlist)
   
 }
+
+
+stl.func <- function(ts.vec,ts.date, smooth.window=14){
+  ts1 <- ts(sqrt(ts.vec[1:(length(ts.vec)-1)]), frequency=7)
+  stl.date <- ts.date[1:(length(ts.date)-1)]
+  stl7 <- stl(ts1, s.window=7, t.window=smooth.window)
+  stl.trend <- c(exp(stl7$time.series[,'trend']),NA)
+  return(stl.trend)
+}
+
+
+
+
