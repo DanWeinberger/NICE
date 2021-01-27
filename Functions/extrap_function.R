@@ -8,7 +8,7 @@ extrap.func<-function(week.rr=0.8, ds, n.extrap=30){
   extrap$extrap.cases0.8 <- extrap$stl.trend
   
   for(i in (nrow(ds)+1):nrow(extrap)){
-    extrap$extrap.cases0.8[i] <-  extrap$extrap.cases0.8[i-7]*0.8
+    extrap$extrap.cases0.8[i] <-  extrap$extrap.cases0.8[i-7]*week.rr
   }
   
   extrap$extrap.cases0.8[extrap$date<= max(ds$date)] <- NA

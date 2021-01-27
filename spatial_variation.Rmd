@@ -124,8 +124,8 @@ Compare hospitalization and case estimates. This shows general agreement that pl
 
 Munis with lower rate in 2nd period vs first
 ```{r}
-ran.eff2 <- ran.eff2[order(ran.eff2$period.nice),]
-print(ran.eff2[ran.eff2$period.nice<0,])
+ran.eff2 <- ran.eff2[order(ran.eff2$period1.nice),]
+print(ran.eff2[ran.eff2$period1.nice<0,])
 
 
 ```
@@ -184,7 +184,7 @@ common.munis <- sort(pop1$muni[pop1$muni %in% colnames(cum.cases)])
 cum.cases <- cum.cases[,common.munis]
 pop.sort <- pop1[order(pop1$muni),]
 pop.sort <- pop.sort[!is.na(pop.sort$pop),]
-pop.sort <- pop.sort[,which(pop.sort$muni %in% colnames(cum.cases))]
+pop.sort <- pop.sort[which(pop.sort$muni %in% colnames(cum.cases)),]
 
 cum.inc <- sapply(colnames(cum.cases) , function(x) cum.inc =cum.cases[,x]/pop.sort$pop[pop.sort$muni==x]*100000) 
 
@@ -255,6 +255,22 @@ abline(h=1,lty=2)
 
 
 
+Lansingerland: https://nltimes.nl/2021/01/22/large-scale-spread-b117-coronavirus-lansingerland-health-service
+70K tested
 
+
+```{r, fig.width=5, fig.height=6}
+par(mfrow=c(2,1))
+case.period <- which(case.dates>=as.Date('2020-09-01'))
+plot(case.dates[case.period], case.wk$Lansingerland[case.period], type='l', main='Cases Lansingerland')
+points(case.dates[case.period], smooth.case7[case.period,'Lansingerland'], type='l', col='red')
+abline(v=as.Date('2021-01-14'), col='red',lty=2)
+
+nice.period <- which(nice.dates>=as.Date('2020-09-01'))
+plot(nice.dates[nice.period], nice.wk$Lansingerland[nice.period], type='l', main='Hos. Admissions Lansingerland')
+points(nice.dates[nice.period], smooth.nice7[nice.period,'Lansingerland'], type='l', col='red')
+abline(v=as.Date('2021-01-14'), col='red',lty=2)
+
+```
 
 

@@ -72,12 +72,12 @@ abline(v=as.Date('2020-03-25'), lty=2)
 Simple extrapolation of the current trend
 
 ```{r}
-extrap.case <- extrap.func(week.rr=0.75, ds=case.data, n.extrap=45)
+extrap.case <- extrap.func(week.rr=0.9, ds=case.data, n.extrap=45)
 
 ```
 
 ```{r}
-plot(extrap.case$date, extrap.case$Total_reported, type='l', col='gray', ylab='Expected cases', bty='l', main='Assume 25% decline/week for 45 days')
+plot(extrap.case$date, extrap.case$Total_reported, type='l', col='gray', ylab='Expected cases', bty='l', main='Assume 10% decline/week for 45 days')
 points(extrap.case$date, extrap.case$stl.trend, type='l', col='black', lty=1)
 points(extrap.case$date, extrap.case$extrap.cases0.8, type='l', col='red', lty=2)
 abline(h=c(2000, 4000, 6000), col=rgb(0,0,0,alpha=0.1))
@@ -127,11 +127,11 @@ abline(v=as.Date('2020-03-25'), lty=2)
 
 
 ```{r}
-extrap.nice <- extrap.func(week.rr=0.75, ds=nice.data, n.extrap=45)
+extrap.nice <- extrap.func(week.rr=0.9, ds=nice.data, n.extrap=45)
 ```
 
 ```{r}
-plot(extrap.nice$date, extrap.nice$Hospital_admission, type='l', col='gray', ylab='Expected cases', bty='l', main='Assume 25% decline/week for 45 days')
+plot(extrap.nice$date, extrap.nice$Hospital_admission, type='l', col='gray', ylab='Expected cases', bty='l', main='Assume 10% decline/week for 45 days')
 points(extrap.nice$date, extrap.nice$stl.trend, type='l', col='black', lty=1)
 points(extrap.nice$date, extrap.nice$extrap.cases0.8, type='l', col='red', lty=2)
 abline(h=c(40, 100, 200), col=rgb(0,0,0,alpha=0.1), lty=c(2,3,3))
@@ -140,7 +140,7 @@ abline(h=c(40, 100, 200), col=rgb(0,0,0,alpha=0.1), lty=c(2,3,3))
 
 ### Adjusting for reporting delay
 
-We use the Bayesian Nowcasting model proposed by [McGough et al (PLOS Comp Biol)]{https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1007735} 
+We use the Bayesian Nowcasting model proposed by [McGough et al (PLOS Comp Biol)]{https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1007735} (WORK IN PROGRESS)
 
 ```{r, eval=F}
 delay <- NoBbsFunc()
@@ -159,8 +159,9 @@ The red line shows the reported number of cases each day
 ```{r, eval=F}
 
 plot(plot.period$dates,plot.period$plot.obs, type='l', bty='l', ylim=c(0, max(plot.period$ObsN,na.rm=T)))
-polygon( c(delay$ci.plot$dates, rev(delay$ci.plot$dates)) ,
-         c(delay$ci.plot$ci.lower,rev(delay$ci.plot$ci.upper)),
+points(plot.period$dates, plot.period$ci.upper, col='red', type='l')
+polygon( c(plot.period$dates, rev(plot.period$dates)) ,
+         c(plot.period$ci.lower,rev(plot.period$ci.upper)),
          col=rgb(0,0,1,alpha=0.1), border=NA)
 points(plot.period$dates, plot.period$obs.inc, type='l', col=rgb(1,0,0,alpha=0.1))
 abline(h=c(40, 100,200), lty=2, col='gray')
