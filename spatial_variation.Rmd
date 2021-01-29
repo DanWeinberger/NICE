@@ -262,12 +262,12 @@ Lansingerland: https://nltimes.nl/2021/01/22/large-scale-spread-b117-coronavirus
 ```{r, fig.width=5, fig.height=6}
 par(mfrow=c(2,1))
 case.period <- which(case.dates>=as.Date('2020-09-01'))
-plot(case.dates[case.period], case.wk$Lansingerland[case.period], type='l', main='Cases Lansingerland')
+plot(case.dates[case.period], case.wk$Lansingerland[case.period], type='l', main='Cases Lansingerland', ylab='N_cases')
 points(case.dates[case.period], smooth.case7[case.period,'Lansingerland'], type='l', col='red')
 abline(v=as.Date('2021-01-14'), col='red',lty=2)
 
 nice.period <- which(nice.dates>=as.Date('2020-09-01'))
-plot(nice.dates[nice.period], nice.wk$Lansingerland[nice.period], type='l', main='Hos. Admissions Lansingerland')
+plot(nice.dates[nice.period], nice.wk$Lansingerland[nice.period], type='l', main='Hos. Admissions Lansingerland', ylab="N_hosp")
 points(nice.dates[nice.period], smooth.nice7[nice.period,'Lansingerland'], type='l', col='red')
 abline(v=as.Date('2021-01-14'), col='red',lty=2)
 
