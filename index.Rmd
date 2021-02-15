@@ -125,6 +125,13 @@ abline(v=as.Date('2020-12-18'), lty=2)
 abline(v=as.Date('2020-03-25'), lty=2)
 ```
 
+```{r}
+plot(nice.data$date, nice.data$roll_rr_7day, type='l', ylim=c(0.5,2.0), main='overlay RR cases (red) and hosp.')
+points(case.data$date, case.data$roll_rr_7day, type='l', col='red')
+abline(h=c(0.8,0.9,1.0), col='gray', lty=c(3,3,2))
+```
+
+
 
 ```{r}
 extrap.nice <- extrap.func(week.rr=0.9, ds=nice.data, n.extrap=45)

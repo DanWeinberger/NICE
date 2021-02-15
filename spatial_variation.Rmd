@@ -252,25 +252,95 @@ matplot(nice.dates,smooth.nice.rr[,check2], type='l', ylim=c(0.5,3), bty='l')
 abline(h=1,lty=2)
 ```
 
+```{r}
+matplot(nice.dates,smooth.nice7[,'Utrecht'], type='l', bty='l')
+points(nice.dates, nice.data$d1.c.wk$Utrecht, type='l', col='gray')
+cbind.data.frame(nice.dates,smooth.nice7[,'Utrecht'])
+
+matplot(case.dates,smooth.case7[,'Utrecht'], type='l', bty='l')
+points(case.dates, case.data$d1.c.wk$Utrecht, type='l', col='gray')
+cbind.data.frame(case.dates,smooth.case7[,'Utrecht'])
+
+
+
+matplot(nice.dates,smooth.nice7[,'Amsterdam'], type='l', bty='l')
+points(nice.dates, nice.data$d1.c.wk$Amsterdam, type='l', col='gray')
+cbind.data.frame(nice.dates,smooth.nice7[,'Amsterdam'])
+
+matplot(case.dates,smooth.case7[,'Amsterdam'], type='l', bty='l')
+points(case.dates, case.data$d1.c.wk$Amsterdam, type='l', col='gray')
+cbind.data.frame(case.dates,smooth.case7[,'Amsterdam'])
+```
+
+
 
 
 
 Lansingerland: https://nltimes.nl/2021/01/22/large-scale-spread-b117-coronavirus-lansingerland-health-service
 70K tested
 
-
 ```{r, fig.width=5, fig.height=6}
 par(mfrow=c(2,1))
 case.period <- which(case.dates>=as.Date('2020-09-01'))
-plot(case.dates[case.period], case.wk$Lansingerland[case.period], type='l', main='Cases Lansingerland', ylab='N_cases')
+plot(case.dates[case.period], case.wk$Lansingerland[case.period], type='l', main='Cases Lansingerland', ylab='N_cases', bty='l')
 points(case.dates[case.period], smooth.case7[case.period,'Lansingerland'], type='l', col='red')
 abline(v=as.Date('2021-01-14'), col='red',lty=2)
 
 nice.period <- which(nice.dates>=as.Date('2020-09-01'))
-plot(nice.dates[nice.period], nice.wk$Lansingerland[nice.period], type='l', main='Hos. Admissions Lansingerland', ylab="N_hosp")
+plot(nice.dates[nice.period], nice.wk$Lansingerland[nice.period], type='l', main='Hos. Admissions Lansingerland', ylab="N_hosp", bty='l')
 points(nice.dates[nice.period], smooth.nice7[nice.period,'Lansingerland'], type='l', col='red')
 abline(v=as.Date('2021-01-14'), col='red',lty=2)
 
+```
+
+
+```{r}
+smooth.case.last <- smooth.case7[nrow(smooth.case7),]
+smooth.case.last <- as.data.frame(smooth.case.last)
+smooth.case.last$muni <- rownames(smooth.case.last)
+smooth.case.last <- merge( smooth.case.last, pop1, by='muni')
+ smooth.case.last$inc <- smooth.case.last$smooth.case.last/smooth.case.last$pop*100000
+smooth.case.last <- smooth.case.last[smooth.case.last$pop>=100000,]
+```
+
+```{r}
+rr.smooth <- matrix(nrow=nrow(smooth.case7), ncol=ncol(smooth.case7))
+
+for(i in 8: nrow(smooth.case7)){
+  for(j in 1: ncol(smooth.case7)){
+  rr.smooth[i,j] <- smooth.case7[i,j]/smooth.case7[i-7,j]
+}
+}
+colnames(rr.smooth) <- colnames(smooth.case7)
+
+rr.smooth <- rr.smooth[,smooth.case7[nrow(smooth.case7),]>20 ]
+
+matplot(rr.smooth[(nrow(rr.smooth)-60):nrow(rr.smooth),], type='l', col=rgb(0,0,0,alpha=0.1), ylim=c(0.5, 1.5))
+abline(h=1)
+
+```
+
+
+```{r}
+matplot(case.dates,smooth.case7[,'Almere'], type='l', bty='l')
+points(case.dates, case.data$d1.c.wk$Almere, type='l', col='gray')
+
+matplot(case.dates,smooth.case7[,'Emmen'], type='l', bty='l')
+points(case.dates, case.data$d1.c.wk$Emmen, type='l', col='gray')
+
+matplot(case.dates,smooth.case7[,'Coevorden'], type='l', bty='l')
+points(case.dates, case.data$d1.c.wk$Coevorden, type='l', col='gray')
+
+matplot(case.dates,smooth.case7[,'Medemblik'], type='l', bty='l')
+points(case.dates, case.data$d1.c.wk$Medemblik, type='l', col='gray')
+
+
+matplot(case.dates,smooth.case7[,'Tilburg'], type='l', bty='l')
+points(case.dates, case.data$d1.c.wk$Tilburg, type='l', col='gray')
+
+
+matplot(case.dates,smooth.case7[,'Oss'], type='l', bty='l')
+points(case.dates, case.data$d1.c.wk$Oss, type='l', col='gray')
 ```
 
 
